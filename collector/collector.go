@@ -114,7 +114,7 @@ type ScrapeResults struct {
 	retries uint64
 }
 
-func ScrapeTarget(ctx context.Context, target string, config *config.Module, logger log.Logger) (ScrapeResults, error) {
+func ScrapeTarget(ctx context.Context, target string, auth string, config *config.Module, logger log.Logger) (ScrapeResults, error) {
 	results := ScrapeResults{}
 	// Set the options.
 	snmp := gosnmp.GoSNMP{}
@@ -150,6 +150,10 @@ func ScrapeTarget(ctx context.Context, target string, config *config.Module, log
 
 	// Configure auth.
 	config.WalkParams.ConfigureSNMP(&snmp)
+
+	if strings.TrimSpace(auth) != "" {
+		snmp.Community = strings.TrimSpace(string(auth))
+	}
 
 	// Do the actual walk.
 	err := snmp.Connect()
@@ -252,12 +256,13 @@ func buildMetricTree(metrics []*config.Metric) *MetricNode {
 type collector struct {
 	ctx    context.Context
 	target string
+	auth   string
 	module *config.Module
 	logger log.Logger
 }
 
-func New(ctx context.Context, target string, module *config.Module, logger log.Logger) *collector {
-	return &collector{ctx: ctx, target: target, module: module, logger: logger}
+func New(ctx context.Context, target string, auth string, module *config.Module, logger log.Logger) *collector {
+	return &collector{ctx: ctx, target: target, auth: auth, module: module, logger: logger}
 }
 
 // Describe implements Prometheus.Collector.
@@ -268,7 +273,7 @@ func (c collector) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements Prometheus.Collector.
 func (c collector) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
-	results, err := ScrapeTarget(c.ctx, c.target, c.module, c.logger)
+	results, err := ScrapeTarget(c.ctx, c.target, c.auth, c.module, c.logger)
 	if err != nil {
 		level.Info(c.logger).Log("msg", "Error scraping target", "err", err)
 		ch <- prometheus.NewInvalidMetric(prometheus.NewDesc("snmp_error", "Error scraping target", nil, nil), err)

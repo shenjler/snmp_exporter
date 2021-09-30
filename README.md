@@ -1,3 +1,22 @@
+# ADD auth community param 
+To simple adapter multi route/switch device have diff community and same module.
+Fix https://github.com/prometheus/snmp_exporter/issues/221
+
+```
+
+/snmp?target=5.6.7.8&module=apcups&auth=community
+
+
+FOR Prometheus config:
+metrics_path: /snmp
+params:
+  module: [apcups]
+  auth: [community]
+
+```
+
+
+
 # Prometheus SNMP Exporter
 
 This exporter is the recommended way to expose SNMP data in a format which
@@ -143,3 +162,5 @@ effects.
 
 If you need to disable this feature for non-Prometheus systems, use the
 command line flag `--no-snmp.wrap-large-counters`.
+
+

@@ -94,12 +94,14 @@ func handler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		return
 	}
 
-	logger = log.With(logger, "module", moduleName, "target", target)
+	authCommunity := query.Get("auth")
+
+	logger = log.With(logger, "module", moduleName, "target", target, "authCommunity", authCommunity)
 	level.Debug(logger).Log("msg", "Starting scrape")
 
 	start := time.Now()
 	registry := prometheus.NewRegistry()
-	c := collector.New(r.Context(), target, module, logger)
+	c := collector.New(r.Context(), target, authCommunity, module, logger)
 	registry.MustRegister(c)
 	// Delegate http serving to Prometheus client library, which will call collector.Collect.
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
